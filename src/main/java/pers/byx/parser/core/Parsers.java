@@ -27,6 +27,11 @@ public class Parsers
         return new Literal(str);
     }
 
+    public static Parser charset(Character... chs)
+    {
+        return new Charset(chs);
+    }
+
     public static Parser or(Parser p1, Parser p2, Parser... others)
     {
         Parser ret = p1.or(p2);

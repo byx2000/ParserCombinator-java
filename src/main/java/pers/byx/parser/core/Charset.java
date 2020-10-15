@@ -18,6 +18,8 @@ public class Charset extends Parser
     {
         if (input.length() <= 0) return ParseResult.fail(input);
         if (!charset.contains(input.charAt(0))) return ParseResult.fail(input);
-        return ParseResult.success(input.subSequence(1, input.length()));
+        Sequence recognized = input.subSequence(0, 1);
+        Sequence remain = input.subSequence(1, input.length());
+        return ParseResult.success(recognized, remain, this);
     }
 }

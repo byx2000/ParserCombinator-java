@@ -1,9 +1,9 @@
 package pers.byx.parser;
 
 import org.junit.Test;
+import pers.byx.parser.core.Char;
 import pers.byx.parser.core.CharSequence;
 import pers.byx.parser.core.ParseResult;
-import pers.byx.parser.core.Sequence;
 
 import static org.junit.Assert.*;
 
@@ -12,18 +12,18 @@ public class ParseResultTest
     @Test
     public void testSuccessResult()
     {
-        Sequence sequence = new CharSequence("abc");
-        ParseResult result = ParseResult.success(sequence);
+        ParseResult result = ParseResult.success(new CharSequence("abc"), new CharSequence("de"), new Char('a'));
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "abc");
+        assertEquals("abc", result.recognized().toString());
+        assertEquals("de", result.remain().toString());
     }
 
     @Test
     public void testFailResult()
     {
-        Sequence sequence = new CharSequence("abc");
-        ParseResult result = ParseResult.fail(sequence);
+        ParseResult result = ParseResult.fail(new CharSequence("abc"));
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "abc");
+        assertNull(result.recognized());
+        assertEquals("abc", result.remain().toString());
     }
 }

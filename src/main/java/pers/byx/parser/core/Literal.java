@@ -17,6 +17,8 @@ public class Literal extends Parser
         {
             if (string.charAt(i) != input.charAt(i)) return ParseResult.fail(input);
         }
-        return ParseResult.success(input.subSequence(string.length(), input.length()));
+        Sequence recognized = input.subSequence(0, string.length());
+        Sequence remain = input.subSequence(string.length(), input.length());
+        return ParseResult.success(recognized, remain, this);
     }
 }

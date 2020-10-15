@@ -5,6 +5,7 @@ import pers.byx.parser.core.*;
 import static pers.byx.parser.core.Parsers.*;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
 
@@ -16,10 +17,12 @@ public class ParserTest
         Parser p = new Empty();
         ParseResult result = p.parse("");
         assertTrue(result.isSuccess());
+        assertEquals("", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("abc");
         assertTrue(result.isSuccess());
+        assertEquals("", result.recognized().toString());
         assertEquals("abc", result.remain().toString());
     }
 
@@ -29,15 +32,18 @@ public class ParserTest
         Parser p = new Any();
         ParseResult result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("sdfsgsa");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "dfsgsa");
+        assertEquals("s", result.recognized().toString());
+        assertEquals("dfsgsa", result.remain().toString());
     }
 
     @Test
@@ -46,23 +52,28 @@ public class ParserTest
         Parser p = new Char('a');
         ParseResult result = p.parse("a");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("b");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "b");
+        assertNull(result.recognized());
+        assertEquals("b", result.remain().toString());
 
         result = p.parse("ab");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "b");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("b", result.remain().toString());
 
         result = p.parse("bc");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "bc");
+        assertNull(result.recognized());
+        assertEquals("bc", result.remain().toString());
 
         result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
     }
 
     @Test
@@ -71,62 +82,22 @@ public class ParserTest
         Parser p = new End();
         ParseResult result = p.parse("");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "a");
+        assertNull(result.recognized());
+        assertEquals("a", result.remain().toString());
 
         result = p.parse("ab");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "ab");
+        assertEquals("ab", result.remain().toString());
 
         result = p.parse(" ");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), " ");
-    }
-
-    @Test
-    public void testOnSuccess()
-    {
-        final boolean[] flag = {false};
-        Parser p = new ActionOnSuccess(new Char('a'), sequence ->
-        {
-            assertEquals(sequence.toString(), "a");
-            flag[0] = true;
-        });
-
-        ParseResult result = p.parse("abc");
-        assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "bc");
-        assertTrue(flag[0]);
-
-        flag[0] = false;
-        result = p.parse("xyz");
-        assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "xyz");
-        assertFalse(flag[0]);
-    }
-
-    @Test
-    public void testOnFail()
-    {
-        final boolean[] flag = {false};
-        Parser p = new ActionOnFail(new Char('a'), remain ->
-        {
-            assertEquals(remain.toString(), "xyz");
-            flag[0] = true;
-        });
-
-        ParseResult result = p.parse("abc");
-        assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "bc");
-        assertFalse(flag[0]);
-
-        result = p.parse("xyz");
-        assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "xyz");
-        assertTrue(flag[0]);
+        assertNull(result.recognized());
+        assertEquals(" ", result.remain().toString());
     }
 
     @Test
@@ -135,33 +106,41 @@ public class ParserTest
         Parser p1 = new Char('a');
         Parser p2 = new Char('b');
         Parser p = new Concat(p1, p2);
+
         ParseResult result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "a");
+        assertNull(result.recognized());
+        assertEquals("a", result.remain().toString());
 
         result = p.parse("b");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "b");
+        assertNull(result.recognized());
+        assertEquals("b", result.remain().toString());
 
         result = p.parse("ab");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("ab", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("bc");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "bc");
+        assertNull(result.recognized());
+        assertEquals("bc", result.remain().toString());
 
         result = p.parse("ac");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "ac");
+        assertNull(result.recognized());
+        assertEquals("ac", result.remain().toString());
 
         result = p.parse("abc");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "c");
+        assertEquals("ab", result.recognized().toString());
+        assertEquals("c", result.remain().toString());
     }
 
     @Test
@@ -170,91 +149,113 @@ public class ParserTest
         Parser p1 = new Char('a');
         Parser p2 = new Char('b');
         Parser p = new Or(p1, p2);
+
         ParseResult result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("b");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("b", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("x");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "x");
+        assertNull(result.recognized());
+        assertEquals("x", result.remain().toString());
 
         result = p.parse("am");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "m");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("m", result.remain().toString());
 
         result = p.parse("bc");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "c");
+        assertEquals("b", result.recognized().toString());
+        assertEquals("c", result.remain().toString());
 
         result = p.parse("xy");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "xy");
+        assertNull(result.recognized());
+        assertEquals("xy", result.remain().toString());
     }
 
     @Test
     public void testZeroOrMore()
     {
         Parser p = new ZeroOrMore(new Char('a'));
+
         ParseResult result = p.parse("");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("b");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "b");
+        assertEquals("", result.recognized().toString());
+        assertEquals("b", result.remain().toString());
 
         result = p.parse("aaaaa");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("aaaaa", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("aaaaabbb");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "bbb");
+        assertEquals("aaaaa", result.recognized().toString());
+        assertEquals("bbb", result.remain().toString());
 
         result = p.parse("bbb");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "bbb");
+        assertEquals("", result.recognized().toString());
+        assertEquals("bbb", result.remain().toString());
     }
 
     @Test
     public void testOneOrMore()
     {
         Parser p = new OneOrMore(new Char('a'));
+
         ParseResult result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("b");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "b");
+        assertNull(result.recognized());
+        assertEquals("b", result.remain().toString());
 
         result = p.parse("aaaaa");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("aaaaa", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("aaaaabbb");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "bbb");
+        assertEquals("aaaaa", result.recognized().toString());
+        assertEquals("bbb", result.remain().toString());
 
         result = p.parse("bbb");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "bbb");
+        assertNull(result.recognized());
+        assertEquals("bbb", result.remain().toString());
     }
 
     @Test
@@ -264,11 +265,19 @@ public class ParserTest
         p.set(new Char('a'));
         ParseResult result = p.parse("abc");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "bc");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("bc", result.remain().toString());
 
         result = p.parse("xyz");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "xyz");
+        assertNull(result.recognized());
+        assertEquals("xyz", result.remain().toString());
+
+        final boolean[] flag = {false};
+        Parser p1 = p.callback(r ->
+                flag[0] = true);
+        p1.parse("a");
+        assertTrue(flag[0]);
     }
 
     @Test
@@ -277,31 +286,38 @@ public class ParserTest
         Parser p = new Charset('a', 'b', 'c');
         ParseResult result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("d");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "d");
+        assertNull(result.recognized());
+        assertEquals("d", result.remain().toString());
 
         result = p.parse("apple");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "pple");
+        assertEquals("a", result.recognized().toString());
+        assertEquals("pple", result.remain().toString());
 
         result = p.parse("banana");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "anana");
+        assertEquals("b", result.recognized().toString());
+        assertEquals("anana", result.remain().toString());
 
         result = p.parse("cat");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "at");
+        assertEquals("c", result.recognized().toString());
+        assertEquals("at", result.remain().toString());
 
         result = p.parse("dress");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "dress");
+        assertNull(result.recognized());
+        assertEquals("dress", result.remain().toString());
     }
 
     @Test
@@ -310,45 +326,55 @@ public class ParserTest
         Parser p = new Range('u', 'w');
         ParseResult result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("u");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("u", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("w");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("w", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("t");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "t");
+        assertNull(result.recognized());
+        assertEquals("t", result.remain().toString());
 
         result = p.parse("x");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "x");
+        assertNull(result.recognized());
+        assertEquals("x", result.remain().toString());
 
         p = new Range('w', 'u');
 
         result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("u");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("u", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("w");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("w", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("t");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "t");
+        assertNull(result.recognized());
+        assertEquals("t", result.remain().toString());
 
         result = p.parse("x");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "x");
+        assertNull(result.recognized());
+        assertEquals("x", result.remain().toString());
     }
 
     @Test
@@ -357,23 +383,33 @@ public class ParserTest
         Parser p = new Literal("double");
         ParseResult result = p.parse("");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("double x = 3.14;");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), " x = 3.14;");
+        assertEquals("double", result.recognized().toString());
+        assertEquals(" x = 3.14;", result.remain().toString());
 
         result = p.parse("int i = 100;");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "int i = 100;");
+        assertNull(result.recognized());
+        assertEquals("int i = 100;", result.remain().toString());
 
         result = p.parse("abc");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "abc");
+        assertNull(result.recognized());
+        assertEquals("abc", result.remain().toString());
 
         result = p.parse("doub");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "doub");
+        assertNull(result.recognized());
+        assertEquals("doub", result.remain().toString());
+
+        result = p.parse("doublr x = 3.14");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("doublr x = 3.14", result.remain().toString());
     }
 
     @Test
@@ -384,22 +420,27 @@ public class ParserTest
 
         result = p.parse("");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("", result.remain().toString());
 
         result = p.parse("b");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("b", result.remain().toString());
 
         result = p.parse("a");
         assertTrue(result.isSuccess());
+        assertEquals("", result.recognized().toString());
         assertEquals("a", result.remain().toString());
 
         result = p.parse("abc");
         assertTrue(result.isSuccess());
+        assertEquals("", result.recognized().toString());
         assertEquals("abc", result.remain().toString());
 
         result = p.parse("bcd");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("bcd", result.remain().toString());
     }
 
@@ -410,23 +451,194 @@ public class ParserTest
 
         ParseResult result = p.parse("+a");
         assertTrue(result.isSuccess());
+        assertEquals("+a", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("-a");
         assertTrue(result.isSuccess());
+        assertEquals("-a", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("a");
         assertTrue(result.isSuccess());
+        assertEquals("a", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("*a");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("*a", result.remain().toString());
 
         result = p.parse("+b");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("+b", result.remain().toString());
+    }
+
+    @Test
+    public void testCallback()
+    {
+        final boolean[] f1 = {false};
+        final boolean[] f2 = {false};
+
+        Parser a = ch('a'), b = ch('b'), c = ch('c');
+        Parser p = a.callback(r -> f1[0] = true).concat(ch('b')).callback(r -> f2[0] = true).end();
+        p.parse("ab");
+        assertTrue(f1[0]);
+        assertTrue(f2[0]);
+
+        f1[0] = false;
+        f2[0] = false;
+        p.parse("ac");
+        assertFalse(f1[0]);
+        assertFalse(f2[0]);
+
+        p.parse("bd");
+        assertFalse(f1[0]);
+        assertFalse(f2[0]);
+
+        f1[0] = true;
+        f2[0] = true;
+        p = ch('a').callback(r -> f1[0] = false).or(ch('b').callback(r -> f2[0] = false));
+        p.parse("a");
+        assertFalse(f1[0]);
+        assertTrue(f2[0]);
+
+        f1[0] = true;
+        p.parse("b");
+        assertTrue(f1[0]);
+        assertFalse(f2[0]);
+
+        final boolean[] flag = {false, false, false, false};
+        final int[] cnt = new int[10];
+        p = a.callback(r ->
+        {
+            cnt[0]++;
+            assertEquals("a", r.recognized().toString());
+            flag[0] = true;
+        }).concat(b.callback(r ->
+        {
+            assertEquals("b", r.recognized().toString());
+            flag[1] = true;
+        })).or(a.callback(r ->
+        {
+            cnt[0]++;
+            assertEquals("a", r.recognized().toString());
+            flag[2] = true;
+        }).concat(c.callback(r ->
+        {
+            assertEquals("c", r.recognized().toString());
+            flag[3] = true;
+        }))).end();
+
+        cnt[0] = 0;
+        p.parse("ab");
+        assertTrue(flag[0]);
+        assertTrue(flag[1]);
+        assertFalse(flag[2]);
+        assertFalse(flag[3]);
+        assertEquals(1, cnt[0]);
+
+        cnt[0] = 0;
+        flag[0] = flag[1] = false;
+        p.parse("ac");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+        assertTrue(flag[2]);
+        assertTrue(flag[3]);
+        assertEquals(1, cnt[0]);
+
+        cnt[0] = 0;
+        flag[2] = flag[3] = false;
+        p.parse("ad");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+        assertFalse(flag[2]);
+        assertFalse(flag[3]);
+        assertEquals(0, cnt[0]);
+
+        cnt[0] = 0;
+        p.parse("db");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+        assertFalse(flag[2]);
+        assertFalse(flag[3]);
+        assertEquals(0, cnt[0]);
+
+        cnt[0] = 0;
+        p.parse("abc");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+        assertFalse(flag[2]);
+        assertFalse(flag[3]);
+        assertEquals(0, cnt[0]);
+
+        p = a.callback(r -> cnt[0]++).oneOrMore().concat(b.callback(r -> cnt[1]++).zeroOrMore()).end();
+
+        cnt[0] = cnt[1] = 0;
+        p.parse("aaaaabbb");
+        assertEquals(5, cnt[0]);
+        assertEquals(3, cnt[1]);
+
+        cnt[0] = cnt[1] = 0;
+        p.parse("aaa");
+        assertEquals(3, cnt[0]);
+        assertEquals(0, cnt[1]);
+
+        cnt[0] = cnt[1] = 0;
+        p.parse("bbbbb");
+        assertEquals(0, cnt[0]);
+        assertEquals(0, cnt[1]);
+
+        p = a.callback(r -> flag[0] = true).concat(b).or(a.callback(r -> flag[1] = true)).end();
+
+        flag[0] = flag[1] = false;
+        p.parse("ab");
+        assertTrue(flag[0]);
+        assertFalse(flag[1]);
+
+        flag[0] = false;
+        p.parse("a");
+        assertFalse(flag[0]);
+        assertTrue(flag[1]);
+
+        flag[1] = false;
+        p.parse("ad");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+
+        p.parse("dx");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+
+        p.parse("abc");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+
+        p = a.callback(r -> flag[0] = true).end().or(a.callback(r -> flag[1] = true).concat(b).end());
+
+        flag[0] = flag[1] = false;
+        p.parse("ab");
+        assertFalse(flag[0]);
+        assertTrue(flag[1]);
+
+        flag[1] = false;
+        p.parse("a");
+        assertTrue(flag[0]);
+        assertFalse(flag[1]);
+
+        flag[0] = false;
+        p.parse("ac");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+
+        p.parse("xy");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
+
+        p.parse("abc");
+        assertFalse(flag[0]);
+        assertFalse(flag[1]);
     }
 
     @Test
@@ -434,21 +646,26 @@ public class ParserTest
     {
         Parser a = ch('a'), b = ch('b'), c = ch('c'), d = ch('d'), e = ch('e');
         Parser p = a.concat(b).concat(c).or(a.concat(b).concat(d));
+
         ParseResult result = p.parse("abc");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("abc", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("abd");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "");
+        assertEquals("abd", result.recognized().toString());
+        assertEquals("", result.remain().toString());
 
         result = p.parse("abc123");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "123");
+        assertEquals("abc", result.recognized().toString());
+        assertEquals("123", result.remain().toString());
 
         result = p.parse("abd123");
         assertTrue(result.isSuccess());
-        assertEquals(result.remain().toString(), "123");
+        assertEquals("abd", result.recognized().toString());
+        assertEquals("123", result.remain().toString());
 
         result = p.parse("abx");
         assertFalse(result.isSuccess());
@@ -456,33 +673,152 @@ public class ParserTest
 
         result = p.parse("axy");
         assertFalse(result.isSuccess());
-        assertEquals(result.remain().toString(), "axy");
+        assertNull(result.recognized());
+        assertEquals("axy", result.remain().toString());
 
         p = a.concat(b.zeroOrMore()).peek(d).or(a.concat(c.zeroOrMore()).peek(e));
 
         result = p.parse("abbbbbd");
         assertTrue(result.isSuccess());
+        assertEquals("abbbbb", result.recognized().toString());
         assertEquals("d", result.remain().toString());
 
         result = p.parse("ad");
         assertTrue(result.isSuccess());
+        assertEquals("a", result.recognized().toString());
         assertEquals("d", result.remain().toString());
 
         result = p.parse("accce");
         assertTrue(result.isSuccess());
+        assertEquals("accc", result.recognized().toString());
         assertEquals("e", result.remain().toString());
 
         result = p.parse("ae");
         assertTrue(result.isSuccess());
+        assertEquals("a", result.recognized().toString());
         assertEquals("e", result.remain().toString());
 
         result = p.parse("abbbbbe");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("abbbbbe", result.remain().toString());
 
         result = p.parse("acccd");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("acccd", result.remain().toString());
+
+        p = a.end().or(a.concat(b).end());
+
+        result = p.parse("ab");
+        assertTrue(result.isSuccess());
+        assertEquals("ab", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("a");
+        assertTrue(result.isSuccess());
+        assertEquals("a", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("ac");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("ac", result.remain().toString());
+
+        result = p.parse("bd");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("bd", result.remain().toString());
+
+        result = p.parse("abc");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("abc", result.remain().toString());
+    }
+
+    @Test
+    public void testRecursive()
+    {
+        // S -> a S b
+        //   |  a b
+        Parser a = ch('a');
+        Parser b = ch('b');
+        Lazy s = new Lazy();
+        s.set(a.concat(s).concat(b).or(a.concat(b)));
+        Parser p = s.end();
+
+        ParseResult result = p.parse("ab");
+        assertTrue(result.isSuccess());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("aabb");
+        assertTrue(result.isSuccess());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("aaaaabbbbb");
+        assertTrue(result.isSuccess());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("");
+        assertFalse(result.isSuccess());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("a");
+        assertFalse(result.isSuccess());
+        assertEquals("a", result.remain().toString());
+
+        result = p.parse("b");
+        assertFalse(result.isSuccess());
+        assertEquals("b", result.remain().toString());
+
+        result = p.parse("aab");
+        assertFalse(result.isSuccess());
+        assertEquals("aab", result.remain().toString());
+
+        result = p.parse("abb");
+        assertFalse(result.isSuccess());
+        assertEquals("abb", result.remain().toString());
+
+        result = p.parse("aaaaabbbb");
+        assertFalse(result.isSuccess());
+        assertEquals("aaaaabbbb", result.remain().toString());
+
+        result = p.parse("aaaabbbbb");
+        assertFalse(result.isSuccess());
+        assertEquals("aaaabbbbb", result.remain().toString());
+
+        // S -> a S
+        //   |  ε
+        s.set(a.concat(s).or(empty));
+        p = s.end();
+
+        result = p.parse("");
+        assertTrue(result.isSuccess());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("a");
+        assertTrue(result.isSuccess());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("aaaaa");
+        assertTrue(result.isSuccess());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("b");
+        assertFalse(result.isSuccess());
+        assertEquals("b", result.remain().toString());
+
+        result = p.parse("bbbbb");
+        assertFalse(result.isSuccess());
+        assertEquals("bbbbb", result.remain().toString());
+
+        result = p.parse("aaaab");
+        assertFalse(result.isSuccess());
+        assertEquals("aaaab", result.remain().toString());
+
+        result = p.parse("baaa");
+        assertFalse(result.isSuccess());
+        assertEquals("baaa", result.remain().toString());
     }
 
     @Test
@@ -726,91 +1062,6 @@ public class ParserTest
     }
 
     @Test
-    public void testRecursive()
-    {
-        // S -> a S b
-        //   |  a b
-        Parser a = ch('a');
-        Parser b = ch('b');
-        Lazy s = new Lazy();
-        s.set(a.concat(s).concat(b).or(a.concat(b)));
-        Parser p = s.end();
-
-        ParseResult result = p.parse("ab");
-        assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("aabb");
-        assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("aaaaabbbbb");
-        assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("");
-        assertFalse(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("a");
-        assertFalse(result.isSuccess());
-        assertEquals("a", result.remain().toString());
-
-        result = p.parse("b");
-        assertFalse(result.isSuccess());
-        assertEquals("b", result.remain().toString());
-
-        result = p.parse("aab");
-        assertFalse(result.isSuccess());
-        assertEquals("aab", result.remain().toString());
-
-        result = p.parse("abb");
-        assertFalse(result.isSuccess());
-        assertEquals("abb", result.remain().toString());
-
-        result = p.parse("aaaaabbbb");
-        assertFalse(result.isSuccess());
-        assertEquals("aaaaabbbb", result.remain().toString());
-
-        result = p.parse("aaaabbbbb");
-        assertFalse(result.isSuccess());
-        assertEquals("aaaabbbbb", result.remain().toString());
-
-        // S -> a S
-        //   |  ε
-        s.set(a.concat(s).or(empty));
-        p = s.end();
-
-        result = p.parse("");
-        assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("a");
-        assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("aaaaa");
-        assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("b");
-        assertFalse(result.isSuccess());
-        assertEquals("b", result.remain().toString());
-
-        result = p.parse("bbbbb");
-        assertFalse(result.isSuccess());
-        assertEquals("bbbbb", result.remain().toString());
-
-        result = p.parse("aaaab");
-        assertFalse(result.isSuccess());
-        assertEquals("aaaab", result.remain().toString());
-
-        result = p.parse("baaa");
-        assertFalse(result.isSuccess());
-        assertEquals("baaa", result.remain().toString());
-    }
-
-    @Test
     public void testDecimalParsing()
     {
         Parser digit = range('0', '9');
@@ -866,153 +1117,225 @@ public class ParserTest
 
         result = p.parse("");
         assertTrue(result.isSuccess());
+        assertEquals("", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("()");
         assertTrue(result.isSuccess());
+        assertEquals("()", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(())");
         assertTrue(result.isSuccess());
+        assertEquals("(())", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("()()");
         assertTrue(result.isSuccess());
+        assertEquals("()()", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(())()");
         assertTrue(result.isSuccess());
+        assertEquals("(())()", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("()(())");
         assertTrue(result.isSuccess());
+        assertEquals("()(())", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("()()()");
         assertTrue(result.isSuccess());
+        assertEquals("()()()", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(()()())");
         assertTrue(result.isSuccess());
+        assertEquals("(()()())", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(()(()))(())()(((()())))");
         assertTrue(result.isSuccess());
+        assertEquals("(()(()))(())()(((()())))", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(", result.remain().toString());
 
         result = p.parse(")");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals(")", result.remain().toString());
 
         result = p.parse("((");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("((", result.remain().toString());
 
         result = p.parse("))");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("))", result.remain().toString());
 
         result = p.parse(")(");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals(")(", result.remain().toString());
 
         result = p.parse(")))(((");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals(")))(((", result.remain().toString());
 
         result = p.parse("(()");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(()", result.remain().toString());
 
         result = p.parse("())");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("())", result.remain().toString());
 
         result = p.parse("()()(");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("()()(", result.remain().toString());
 
         result = p.parse("(()()");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(()()", result.remain().toString());
 
         result = p.parse("(()(())");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(()(())", result.remain().toString());
 
         result = p.parse("(()(()))(())((((()())))");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(()(()))(())((((()())))", result.remain().toString());
 
         result = p.parse("aab(())");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("aab(())", result.remain().toString());
 
         result = p.parse("(())aab");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(())aab", result.remain().toString());
     }
 
     @Test
     public void testListParsing()
     {
-        List<Integer> list = new ArrayList<>();
+        List<Integer> nums = new ArrayList<>();
+
+        Consumer<ParseResult> addNumber = r -> nums.add(Integer.parseInt(r.recognized().toString()));
 
         Parser digit = range('0', '9');
-        Lazy LR = new Lazy();
-        LR.set(ch(',').concat(digit.onSuccess(s -> list.add(Integer.parseInt(s.toString()))))
-                .concat(LR)
-                .or(empty));
-        Parser p = digit.onSuccess(s -> list.add(Integer.parseInt(s.toString())))
-                .concat(LR)
-                .or(empty)
-                .end()
-                .onFail(s -> list.clear());
+        Parser integer = digit.oneOrMore();
 
-        ParseResult result = p.parse("");
+        Lazy numberListTail = lazy();
+        numberListTail.set(ch(',').concat(integer.callback(addNumber)).concat(numberListTail).or(empty));
+        Parser numberList = integer.callback(addNumber).concat(numberListTail).or(integer.callback(addNumber));
+        Parser list = ch('[').concat(ch(']')).or(ch('[').concat(numberList).concat(ch(']')).or(ch('[')));
+        list = list.end();
+
+        ParseResult result = list.parse("[]");
         assertTrue(result.isSuccess());
+        assertEquals("[]", result.recognized().toString());
         assertEquals("", result.remain().toString());
-        assertEquals(new ArrayList<Integer>(), list);
+        assertEquals(0, nums.size());
 
-        list.clear();
-        result = p.parse("1");
+        nums.clear();
+        result = list.parse("[3]");
         assertTrue(result.isSuccess());
+        assertEquals("[3]", result.recognized().toString());
         assertEquals("", result.remain().toString());
-        assertEquals(Collections.singletonList(1), list);
+        assertEquals(Collections.singletonList(3), nums);
 
-        list.clear();
-        result = p.parse("1,2");
+        nums.clear();
+        result = list.parse("[123]");
         assertTrue(result.isSuccess());
+        assertEquals("[123]", result.recognized().toString());
         assertEquals("", result.remain().toString());
-        assertEquals(Arrays.asList(1, 2), list);
+        assertEquals(Collections.singletonList(123), nums);
 
-        list.clear();
-        result = p.parse("1,2,3,4,5");
+        nums.clear();
+        result = list.parse("[1,2,3]");
         assertTrue(result.isSuccess());
+        assertEquals("[1,2,3]", result.recognized().toString());
         assertEquals("", result.remain().toString());
-        assertEquals(Arrays.asList(1, 2, 3, 4, 5), list);
+        assertEquals(Arrays.asList(1, 2, 3), nums);
 
-        list.clear();
-        result = p.parse("1, 2, 3");
+        nums.clear();
+        result = list.parse("[12,5435,4,77]");
+        assertTrue(result.isSuccess());
+        assertEquals("[12,5435,4,77]", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(Arrays.asList(12, 5435, 4, 77), nums);
+
+        nums.clear();
+        result = list.parse("");
         assertFalse(result.isSuccess());
-        assertEquals("1, 2, 3", result.remain().toString());
-        assertEquals(new ArrayList<>(), list);
+        assertNull(result.recognized());
+        assertEquals("", result.remain().toString());
+        assertEquals(0, nums.size());
 
-        list.clear();
-        result = p.parse(",1,2,3");
+        nums.clear();
+        result = list.parse("[3");
         assertFalse(result.isSuccess());
-        assertEquals(",1,2,3", result.remain().toString());
-        assertEquals(new ArrayList<>(), list);
+        assertNull(result.recognized());
+        assertEquals("[3", result.remain().toString());
+        assertEquals(0, nums.size());
 
-        list.clear();
-        result = p.parse("1,2,3,a,4");
+        nums.clear();
+        result = list.parse("345]");
         assertFalse(result.isSuccess());
-        assertEquals("1,2,3,a,4", result.remain().toString());
-        assertEquals(new ArrayList<>(), list);
+        assertNull(result.recognized());
+        assertEquals("345]", result.remain().toString());
+        assertEquals(0, nums.size());
+
+        nums.clear();
+        result = list.parse("12,3,45");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("12,3,45", result.remain().toString());
+        assertEquals(0, nums.size());
+
+        nums.clear();
+        result = list.parse("[12 3 45]");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("[12 3 45]", result.remain().toString());
+        assertEquals(0, nums.size());
+
+        nums.clear();
+        result = list.parse("[12,,3,45]");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("[12,,3,45]", result.remain().toString());
+        assertEquals(0, nums.size());
+
+        nums.clear();
+        result = list.parse("[,12,34]");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("[,12,34]", result.remain().toString());
+        assertEquals(0, nums.size());
+
+        nums.clear();
+        result = list.parse("[12,34,]");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals("[12,34,]", result.remain().toString());
+        assertEquals(0, nums.size());
     }
 
     @Test
@@ -1034,50 +1357,62 @@ public class ParserTest
 
         result = p.parse("11");
         assertTrue(result.isSuccess());
+        assertEquals("11", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("110");
         assertTrue(result.isSuccess());
+        assertEquals("110", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1100");
         assertTrue(result.isSuccess());
+        assertEquals("1100", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("101110001");
         assertTrue(result.isSuccess());
+        assertEquals("101110001", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("110111100011100101010001");
         assertTrue(result.isSuccess());
+        assertEquals("110111100011100101010001", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("10");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("10", result.remain().toString());
 
         result = p.parse("100");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("100", result.remain().toString());
 
         result = p.parse("1101");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1101", result.remain().toString());
 
         result = p.parse("110111100011100101010010");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("110111100011100101010010", result.remain().toString());
 
         result = p.parse("110111100011100101010011");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("110111100011100101010011", result.remain().toString());
 
         result = p.parse("110111100011100101010100");
         assertTrue(result.isSuccess());
+        assertEquals("110111100011100101010100", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("110000001110100001");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("110000001110100001", result.remain().toString());
     }
 
@@ -1116,82 +1451,107 @@ public class ParserTest
 
         result = p.parse("1");
         assertTrue(result.isSuccess());
+        assertEquals("1", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("3*4");
         assertTrue(result.isSuccess());
+        assertEquals("3*4", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("3*4/5/6*7");
         assertTrue(result.isSuccess());
+        assertEquals("3*4/5/6*7", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1+2");
         assertTrue(result.isSuccess());
+        assertEquals("1+2", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1+2-3-4+5");
         assertTrue(result.isSuccess());
+        assertEquals("1+2-3-4+5", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1*2+3*4-5*6+7*8");
         assertTrue(result.isSuccess());
+        assertEquals("1*2+3*4-5*6+7*8", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1*2+3*4*5*6-7-8+9*0");
         assertTrue(result.isSuccess());
+        assertEquals("1*2+3*4*5*6-7-8+9*0", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1)");
         assertTrue(result.isSuccess());
+        assertEquals("(1)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1*2)");
         assertTrue(result.isSuccess());
+        assertEquals("(1*2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1*2/3/4*5)");
         assertTrue(result.isSuccess());
+        assertEquals("(1*2/3/4*5)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1+2)");
         assertTrue(result.isSuccess());
+        assertEquals("(1+2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1+2-3-4+5)");
         assertTrue(result.isSuccess());
+        assertEquals("(1+2-3-4+5)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1*2-3*4*5+6+7)");
         assertTrue(result.isSuccess());
+        assertEquals("(1*2-3*4*5+6+7)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1+2)*3");
         assertTrue(result.isSuccess());
+        assertEquals("(1+2)*3", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("3*(1+2)");
         assertTrue(result.isSuccess());
+        assertEquals("3*(1+2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(3+4)*(1+2)");
         assertTrue(result.isSuccess());
+        assertEquals("(3+4)*(1+2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("((3+5/6)+4)*(1+(5*(7-(1/2))))+3");
         assertTrue(result.isSuccess());
+        assertEquals("((3+5/6)+4)*(1+(5*(7-(1/2))))+3", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("", result.remain().toString());
 
         result = p.parse("()");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("()", result.remain().toString());
+
+        result = p.parse(")(");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals(")(", result.remain().toString());
 
         result = p.parse("1+");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1+", result.remain().toString());
 
         result = p.parse("+1");
@@ -1200,34 +1560,42 @@ public class ParserTest
 
         result = p.parse("1/2/3*");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1/2/3*", result.remain().toString());
 
         result = p.parse("1+2-3-");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1+2-3-", result.remain().toString());
 
         result = p.parse("(3+4)*1+2)");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(3+4)*1+2)", result.remain().toString());
 
         result = p.parse("(3+4)*(1+2)/(5-6");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(3+4)*(1+2)/(5-6", result.remain().toString());
 
         result = p.parse("1+2 abc");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1+2 abc", result.remain().toString());
 
         result = p.parse("abc1+2");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("abc1+2", result.remain().toString());
 
         result = p.parse("3*4*5*a");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("3*4*5*a", result.remain().toString());
 
         result = p.parse("a*3*4*5");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("a*3*4*5", result.remain().toString());
     }
 
@@ -1270,94 +1638,107 @@ public class ParserTest
 
         result = p.parse("1");
         assertTrue(result.isSuccess());
+        assertEquals("1", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("3*4");
         assertTrue(result.isSuccess());
+        assertEquals("3*4", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
-        result = term.parse("3/4");
+        result = p.parse("3*4/5/6*7");
         assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = term.parse("3/4*5");
-        assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = term.parse("3/4/5*6/7*8");
-        assertTrue(result.isSuccess());
+        assertEquals("3*4/5/6*7", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1+2");
         assertTrue(result.isSuccess());
+        assertEquals("1+2", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1+2-3-4+5");
         assertTrue(result.isSuccess());
+        assertEquals("1+2-3-4+5", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
-        result = p.parse("1-2+3+4+5");
+        result = p.parse("1*2+3*4-5*6+7*8");
         assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("1*2+3*4-5*6/7+7/8*9");
-        assertTrue(result.isSuccess());
+        assertEquals("1*2+3*4-5*6+7*8", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("1*2+3*4*5*6-7-8+9*0");
         assertTrue(result.isSuccess());
+        assertEquals("1*2+3*4*5*6-7-8+9*0", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1)");
         assertTrue(result.isSuccess());
+        assertEquals("(1)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
-        result = factor.parse("(1*2)");
+        result = p.parse("(1*2)");
         assertTrue(result.isSuccess());
-        assertEquals("", result.remain().toString());
-
-        result = p.parse("(1+2)");
-        assertTrue(result.isSuccess());
+        assertEquals("(1*2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1*2/3/4*5)");
         assertTrue(result.isSuccess());
+        assertEquals("(1*2/3/4*5)", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+
+        result = p.parse("(1+2)");
+        assertTrue(result.isSuccess());
+        assertEquals("(1+2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1+2-3-4+5)");
         assertTrue(result.isSuccess());
+        assertEquals("(1+2-3-4+5)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
-        result = p.parse("(1*2-3*4/5+6+7)");
+        result = p.parse("(1*2-3*4*5+6+7)");
         assertTrue(result.isSuccess());
+        assertEquals("(1*2-3*4*5+6+7)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(1+2)*3");
         assertTrue(result.isSuccess());
+        assertEquals("(1+2)*3", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("3*(1+2)");
         assertTrue(result.isSuccess());
+        assertEquals("3*(1+2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("(3+4)*(1+2)");
         assertTrue(result.isSuccess());
+        assertEquals("(3+4)*(1+2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
-        result = p.parse("((3+5/6*3)+4)*(1+(5*(7-(1/2)+4)))+3");
+        result = p.parse("((3+5/6)+4)*(1+(5*(7-(1/2))))+3");
         assertTrue(result.isSuccess());
+        assertEquals("((3+5/6)+4)*(1+(5*(7-(1/2))))+3", result.recognized().toString());
         assertEquals("", result.remain().toString());
 
         result = p.parse("");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("", result.remain().toString());
 
         result = p.parse("()");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("()", result.remain().toString());
+
+        result = p.parse(")(");
+        assertFalse(result.isSuccess());
+        assertNull(result.recognized());
+        assertEquals(")(", result.remain().toString());
 
         result = p.parse("1+");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1+", result.remain().toString());
 
         result = p.parse("+1");
@@ -1366,34 +1747,42 @@ public class ParserTest
 
         result = p.parse("1/2/3*");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1/2/3*", result.remain().toString());
 
         result = p.parse("1+2-3-");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1+2-3-", result.remain().toString());
 
         result = p.parse("(3+4)*1+2)");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(3+4)*1+2)", result.remain().toString());
 
         result = p.parse("(3+4)*(1+2)/(5-6");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("(3+4)*(1+2)/(5-6", result.remain().toString());
 
         result = p.parse("1+2 abc");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("1+2 abc", result.remain().toString());
 
         result = p.parse("abc1+2");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("abc1+2", result.remain().toString());
 
         result = p.parse("3*4*5*a");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("3*4*5*a", result.remain().toString());
 
         result = p.parse("a*3*4*5");
         assertFalse(result.isSuccess());
+        assertNull(result.recognized());
         assertEquals("a*3*4*5", result.remain().toString());
     }
 
@@ -1401,6 +1790,21 @@ public class ParserTest
     public void testExprEval()
     {
         Stack<Integer> stack = new Stack<>();
+
+        Consumer<ParseResult> push = r -> stack.push(Integer.parseInt(r.recognized().toString()));
+
+        Consumer<ParseResult> calc = r ->
+        {
+            int rhs = stack.pop();
+            int lhs = stack.pop();
+            switch (r.recognized().charAt(0))
+            {
+                case '+' -> stack.push(lhs + rhs);
+                case '-' -> stack.push(lhs - rhs);
+                case '*' -> stack.push(lhs * rhs);
+                case '/' -> stack.push(lhs / rhs);
+            }
+        };
 
         Parser digit = range('0', '9');
         Parser add = ch('+');
@@ -1410,37 +1814,11 @@ public class ParserTest
         Parser lp = ch('(');
         Parser rp = ch(')');
 
-        Lazy expr = new Lazy();
-
-        Parser factor = digit.onSuccess(sequence -> stack.push(Integer.parseInt(sequence.toString())))
-                             .or(lp.concat(expr).concat(rp));
-
-        Parser term = factor.concat(mul.or(div).concat(factor)
-                            .onSuccess(sequence ->
-                            {
-                                int rhs = stack.pop();
-                                int lhs = stack.pop();
-                                switch (sequence.charAt(0))
-                                {
-                                    case '*' -> stack.push(lhs * rhs);
-                                    case '/' -> stack.push(lhs / rhs);
-                                }
-                            })
-                            .zeroOrMore());
-
-        expr.set(term.concat(add.or(sub).concat(term)
-                          .onSuccess(sequence ->
-                          {
-                              int rhs = stack.pop();
-                              int lhs = stack.pop();
-                              switch (sequence.charAt(0))
-                              {
-                                  case '+' -> stack.push(lhs + rhs);
-                                  case '-' -> stack.push(lhs - rhs);
-                              }
-                          })
-                         .zeroOrMore()));
-
+        Lazy expr = lazy();
+        Parser factor = or(digit.callback(push),
+                           lp.concat(expr).concat(rp));
+        Parser term = factor.concat(mul.or(div).concat(factor).callback(calc).zeroOrMore());
+        expr.set(term.concat(add.or(sub).concat(term).callback(calc).zeroOrMore()));
         Parser p = expr.end();
 
         ParseResult result;
@@ -1448,79 +1826,99 @@ public class ParserTest
         stack.clear();
         result = p.parse("2");
         assertTrue(result.isSuccess());
+        assertEquals("2", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(2, (int)stack.pop());
 
         stack.clear();
         result = p.parse("2*3");
         assertTrue(result.isSuccess());
+        assertEquals("2*3", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(6, (int)stack.pop());
 
         stack.clear();
         result = p.parse("9/3");
         assertTrue(result.isSuccess());
+        assertEquals("9/3", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(3, (int)stack.pop());
 
         stack.clear();
         result = p.parse("7+8");
         assertTrue(result.isSuccess());
+        assertEquals("7+8", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(15, (int)stack.pop());
 
         stack.clear();
         result = p.parse("2+3*4");
         assertTrue(result.isSuccess());
+        assertEquals("2+3*4", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(14, (int)stack.pop());
 
         stack.clear();
         result = p.parse("3*5+7");
         assertTrue(result.isSuccess());
+        assertEquals("3*5+7", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(22, (int)stack.pop());
 
         stack.clear();
         result = p.parse("(3)");
         assertTrue(result.isSuccess());
+        assertEquals("(3)", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(3, (int)stack.pop());
 
         stack.clear();
         result = p.parse("((5))");
         assertTrue(result.isSuccess());
+        assertEquals("((5))", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(5, (int)stack.pop());
 
         stack.clear();
         result = p.parse("(1+2)");
         assertTrue(result.isSuccess());
+        assertEquals("(1+2)", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(3, (int)stack.pop());
 
         stack.clear();
         result = p.parse("(2+3)*4");
         assertTrue(result.isSuccess());
+        assertEquals("(2+3)*4", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(20, (int)stack.pop());
 
         stack.clear();
         result = p.parse("2+(3*4)");
         assertTrue(result.isSuccess());
+        assertEquals("2+(3*4)", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(14, (int)stack.pop());
 
         stack.clear();
         result = p.parse("(2+3)*(4+5)");
         assertTrue(result.isSuccess());
+        assertEquals("(2+3)*(4+5)", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(45, (int)stack.pop());
 
         stack.clear();
         result = p.parse("2+3*4+5");
         assertTrue(result.isSuccess());
+        assertEquals("2+3*4+5", result.recognized().toString());
         assertEquals("", result.remain().toString());
         assertEquals(19, (int)stack.pop());
+
+        stack.clear();
+        result = p.parse("(5+3)/6+3*((4+5)/3-2*7)/(0-6*(4-3))");
+        assertTrue(result.isSuccess());
+        assertEquals("(5+3)/6+3*((4+5)/3-2*7)/(0-6*(4-3))", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(6, (int)stack.pop());
     }
 }

@@ -13,10 +13,11 @@ public class Concat extends Parser
     @Override
     protected ParseResult parse(Sequence input)
     {
-        ParseResult result = p1.parse(input);
-        if (!result.isSuccess()) return ParseResult.fail(input);
-        result = p2.parse(result.remain());
-        if (!result.isSuccess()) return ParseResult.fail(input);
-        return result;
+        ParseResult result1 = p1.parse(input);
+        if (!result1.isSuccess()) return ParseResult.fail(input);
+        ParseResult result2 = p2.parse(result1.remain());
+        if (!result2.isSuccess()) return ParseResult.fail(input);
+        Sequence recognized = input.subSequence(0, input.length() - result2.remain().length());
+        return ParseResult.success(recognized, result2.remain(), this, result1, result2);
     }
 }

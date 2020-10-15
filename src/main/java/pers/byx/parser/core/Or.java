@@ -14,9 +14,11 @@ public class Or extends Parser
     protected ParseResult parse(Sequence input)
     {
         ParseResult result = p1.parse(input);
-        if (result.isSuccess()) return result;
+        if (result.isSuccess())
+            return ParseResult.success(result.recognized(), result.remain(), this, result);
         result = p2.parse(input);
-        if (result.isSuccess()) return result;
+        if (result.isSuccess())
+            return ParseResult.success(result.recognized(), result.remain(), this, result);
         return ParseResult.fail(input);
     }
 }

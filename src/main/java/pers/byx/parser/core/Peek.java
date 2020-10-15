@@ -14,6 +14,6 @@ public class Peek extends Parser
     {
         ParseResult result = p.parse(input);
         if (!result.isSuccess()) return ParseResult.fail(input);
-        return ParseResult.success(input);
+        return ParseResult.success(input.subSequence(0, 0), input, this);
     }
 }

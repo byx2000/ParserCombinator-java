@@ -6,6 +6,8 @@ public class Any extends Parser
     protected ParseResult parse(Sequence input)
     {
         if (input.length() == 0) return ParseResult.fail(input);
-        return ParseResult.success(input.subSequence(1, input.length()));
+        Sequence recognized = input.subSequence(0, 1);
+        Sequence remain = input.subSequence(1, input.length());
+        return ParseResult.success(recognized, remain, this);
     }
 }

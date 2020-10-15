@@ -13,7 +13,8 @@ public class Option extends Parser
     protected ParseResult parse(Sequence input)
     {
         ParseResult result = p.parse(input);
-        if (result.isSuccess()) return result;
-        return ParseResult.success(input);
+        if (result.isSuccess())
+            return ParseResult.success(result.recognized(), result.remain(), this, result);
+        return ParseResult.success(input.subSequence(0, 0), input, this);
     }
 }
