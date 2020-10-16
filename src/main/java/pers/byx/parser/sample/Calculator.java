@@ -4,7 +4,6 @@ import pers.byx.parser.core.Lazy;
 import pers.byx.parser.core.ParseResult;
 import pers.byx.parser.core.Parser;
 
-import java.util.Scanner;
 import java.util.Stack;
 import java.util.function.Consumer;
 
@@ -58,11 +57,10 @@ public class Calculator
 
     public static void main(String[] args)
     {
-        Scanner scanner = new Scanner(System.in);
-        String line;
-        while (!(line = scanner.nextLine()).equals("q"))
-        {
-            System.out.println(calculate(line));
-        }
+        System.out.println(calculate("123")); // 123
+        System.out.println(calculate("1+2")); // 3
+        System.out.println(calculate("(11+6)*5")); // 85
+        System.out.println(calculate("(2+3)*(4+5)")); // 45
+        System.out.println(calculate("(6/2)/(3*2)")); // 0.5
     }
 }

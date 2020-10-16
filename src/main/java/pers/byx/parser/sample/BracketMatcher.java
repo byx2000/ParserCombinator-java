@@ -8,7 +8,7 @@ import static pers.byx.parser.core.Parsers.*;
 
 public class BracketMatcher
 {
-    public static void main(String[] args)
+    public static boolean match(String input)
     {
         Lazy S = new Lazy();
         Parser T = or(ch('(').concat(S).concat(ch(')')),
@@ -17,15 +17,19 @@ public class BracketMatcher
         S.set(T.concat(S).or(empty));
         Parser p = S.end();
 
-        Scanner scanner = new Scanner(System.in);
-        String line;
-        while (!(line = scanner.nextLine()).equals("q"))
-        {
-            ParseResult result = p.parse(line);
-            if (result.isSuccess())
-                System.out.println("valid");
-            else
-                System.out.println("invalid");
-        }
+        return p.parse(input).isSuccess();
+    }
+
+    public static void main(String[] args)
+    {
+        System.out.println(match("")); // true
+        System.out.println(match("()")); // true
+        System.out.println(match("[]")); // true
+        System.out.println(match("{}")); // true
+        System.out.println(match("()[]{}")); // true
+        System.out.println(match("{()}[]()")); // true
+        System.out.println(match("[")); // false
+        System.out.println(match("(]{}[}")); // false
+        System.out.println(match("{([))}")); // false
     }
 }
