@@ -5,6 +5,32 @@ import java.util.function.Consumer;
 
 public abstract class Parser
 {
+    private HashMap<String, Object> attributes;
+
+    public void setAttribute(String key, Object value)
+    {
+        if (attributes == null) attributes = new HashMap<>();
+        attributes.put(key, value);
+    }
+
+    public boolean hasAttrbute(String key)
+    {
+        if (attributes == null) return false;
+        return attributes.containsKey(key);
+    }
+
+    public Object getAttribute(String key)
+    {
+        if (attributes == null) return null;
+        return attributes.get(key);
+    }
+
+    public Object removeAttribute(String key)
+    {
+        if (attributes == null) return null;
+        return attributes.remove(key);
+    }
+
     public ParseResult parse(String input)
     {
         ParseResult result = parse(new CharSequence(input));
@@ -74,11 +100,6 @@ public abstract class Parser
     {
         return new Callback(this, callback);
     }
-
-    /*public Parser onFail(Consumer<Sequence> callback)
-    {
-        return new ActionOnFail(this, callback);
-    }*/
 
     public Parser option(Parser p)
     {

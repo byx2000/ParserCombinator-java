@@ -1921,4 +1921,202 @@ public class ParserTest
         assertEquals("", result.remain().toString());
         assertEquals(6, (int)stack.pop());
     }
+
+    @Test
+    public void testBracketNestedLayerWithAttributes()
+    {
+        Parser lp = ch('('), rp = ch(')');
+        Lazy expr = lazy();
+        expr.set(or(lp.concat(expr).concat(rp).callback(r -> expr.setAttribute("layer", (Integer)expr.getAttribute("layer") + 1)),
+                    literal("()").callback(r -> expr.setAttribute("layer", 1))));
+
+        ParseResult result = expr.parse("()");
+        assertTrue(result.isSuccess());
+        assertEquals("()", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(1, expr.getAttribute("layer"));
+
+        result = expr.parse("(())");
+        assertTrue(result.isSuccess());
+        assertEquals("(())", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(2, expr.getAttribute("layer"));
+
+        result = expr.parse("((((()))))");
+        assertTrue(result.isSuccess());
+        assertEquals("((((()))))", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(5, expr.getAttribute("layer"));
+    }
+
+    @Test
+    public void testAddExprEvalWithAttributes()
+    {
+        Parser digit = range('0', '9'), add = ch('+');
+        Lazy expr = lazy();
+        Consumer<ParseResult> accumulate = r ->
+        {
+            int val = Integer.parseInt(r.recognized().toString());
+            if (expr.hasAttrbute("val"))
+                expr.setAttribute("val", (int)expr.getAttribute("val") + val);
+            else
+                expr.setAttribute("val", val);
+        };
+        expr.set(or(digit.callback(accumulate).concat(add).concat(expr),
+                    digit.callback(accumulate)));
+
+        ParseResult result;
+
+        result = expr.parse("3");
+        assertTrue(result.isSuccess());
+        assertEquals("3", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(3, expr.removeAttribute("val"));
+
+        result = expr.parse("3+4");
+        assertTrue(result.isSuccess());
+        assertEquals("3+4", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(7, expr.removeAttribute("val"));
+
+        result = expr.parse("1+2+3");
+        assertTrue(result.isSuccess());
+        assertEquals("1+2+3", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(6, expr.getAttribute("val"));
+
+        expr.setAttribute("val", 0);
+        result = expr.parse("3+4+5+6+7");
+        assertTrue(result.isSuccess());
+        assertEquals("3+4+5+6+7", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(25, expr.getAttribute("val"));
+    }
+
+    @Test
+    public void testIntegerParsingWithAttributes()
+    {
+        Parser digit = range('0', '9');
+        Lazy integer = lazy();
+        Consumer<ParseResult> accumulate = r ->
+        {
+            int val = Integer.parseInt(r.recognized().toString());
+            integer.setAttribute("val", (Integer)integer.getAttribute("val") * 10 + val);
+        };
+        integer.set(or(digit.callback(accumulate).concat(integer),
+                       digit.callback(accumulate)));
+
+
+        integer.setAttribute("val", 0);
+        ParseResult result = integer.parse("1");
+        assertTrue(result.isSuccess());
+        assertEquals("1", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(1, integer.getAttribute("val"));
+
+        integer.setAttribute("val", 0);
+        result = integer.parse("12");
+        assertTrue(result.isSuccess());
+        assertEquals("12", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(12, integer.getAttribute("val"));
+
+        integer.setAttribute("val", 0);
+        result = integer.parse("12345");
+        assertTrue(result.isSuccess());
+        assertEquals("12345", result.recognized().toString());
+        assertEquals("", result.remain().toString());
+        assertEquals(12345, integer.getAttribute("val"));
+    }
+
+    /*@Test
+    public void testExprEvalWithAttributes()
+    {
+        Parser digit = range('0', '9');
+        Parser add = ch('+');
+        Parser sub = ch('-');
+        Parser mul = ch('*');
+        Parser div = ch('/');
+        Parser lp = ch('(');
+        Parser rp = ch(')');
+
+        Lazy expr = lazy();
+        Lazy term = lazy();
+        Lazy factor = lazy();
+
+        Consumer<ParseResult> setDigitToFactor = r ->
+        {
+            int val = Integer.parseInt(r.recognized().toString());
+            factor.setAttribute("val", val);
+            System.out.println("factor.val = " + val);
+        };
+
+        Consumer<ParseResult> setExprToFactor = r ->
+        {
+            factor.setAttribute("val", (int)expr.getAttribute("val"));
+        };
+
+        Consumer<ParseResult> mulFactorToTerm = r ->
+        {
+            int val = (int)factor.getAttribute("val");
+            if (term.hasAttrbute("val"))
+                term.setAttribute("val", (int)term.getAttribute("val") * val);
+            else
+                term.setAttribute("val", val);
+            System.out.println("mul term.val = " + term.getAttribute("val"));
+        };
+
+        Consumer<ParseResult> divFactorToTerm = r ->
+        {
+            int val = (int)factor.getAttribute("val");
+            if (term.hasAttrbute("val"))
+                term.setAttribute("val", (int)term.getAttribute("val") / val);
+            else
+                term.setAttribute("val", val);
+        };
+
+        Consumer<ParseResult> setFactorToTerm = r ->
+        {
+            term.setAttribute("val", (int)factor.getAttribute("val"));
+            System.out.println("term.val = " + term.getAttribute("val"));
+        };
+
+        Consumer<ParseResult> addTermToExpr = r ->
+        {
+            int val = (int)term.getAttribute("val");
+            if (expr.hasAttrbute("val"))
+                expr.setAttribute("val", (int)expr.getAttribute("val") + val);
+            else
+                expr.setAttribute("val", val);
+        };
+
+        Consumer<ParseResult> subTermToExpr = r ->
+        {
+            int val = (int)term.getAttribute("val");
+            if (expr.hasAttrbute("val"))
+                expr.setAttribute("val", (int)expr.getAttribute("val") - val);
+            else
+                expr.setAttribute("val", val);
+        };
+
+        Consumer<ParseResult> setTermToExpr = r ->
+        {
+            expr.setAttribute("val", (int)term.getAttribute("val"));
+            System.out.println("expr.val = " + expr.getAttribute("val"));
+        };
+
+        factor.set(or(digit.callback(setDigitToFactor),
+                      lp.concat(expr).concat(rp).callback(setExprToFactor)));
+        term.set(or(factor.callback(mulFactorToTerm).concat(mul).concat(term),
+                    factor.callback(divFactorToTerm).concat(div).concat(term),
+                    factor.callback(setFactorToTerm)));
+        expr.set(or(term.callback(addTermToExpr).concat(add).concat(expr),
+                    term.callback(subTermToExpr).concat(sub).concat(expr),
+                    term.callback(setTermToExpr)));
+
+        ParseResult result;
+
+        result = expr.parse("3*4");
+
+    }*/
 }
