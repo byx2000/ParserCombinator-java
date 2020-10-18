@@ -19,7 +19,7 @@ public class Callback extends Parser
         ParseResult result = p.parse(input);
         if (result.isSuccess())
         {
-            return ParseResult.success(result.recognized(), result.remain(), this, result);
+            return ParseResult.success(result.recognized(), result.remain(), this, result.getResultChain());
         }
         return ParseResult.fail(input);
     }

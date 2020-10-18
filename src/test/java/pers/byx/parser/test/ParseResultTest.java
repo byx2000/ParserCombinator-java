@@ -1,4 +1,4 @@
-package pers.byx.parser;
+package pers.byx.parser.test;
 
 import org.junit.Test;
 import pers.byx.parser.core.Char;

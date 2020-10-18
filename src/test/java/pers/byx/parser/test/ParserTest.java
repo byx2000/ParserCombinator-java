@@ -1,4 +1,4 @@
-package pers.byx.parser;
+package pers.byx.parser.test;
 
 import org.junit.Test;
 import pers.byx.parser.core.*;
@@ -639,6 +639,11 @@ public class ParserTest
         p.parse("abc");
         assertFalse(flag[0]);
         assertFalse(flag[1]);
+
+        p = a.zeroOrMore().callback(r -> {});
+        ParseResult result = p.parse("aaaaa");
+        assertTrue(result.isSuccess());
+        assertEquals(5, result.getResultChain().size());
     }
 
     @Test
